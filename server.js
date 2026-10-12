@@ -47,7 +47,7 @@ async function notify(appRow,stage='application'){
   msg=`📝 *New application*\nID: \`${esc(appRow.public_id)}\`\nName: ${esc(appRow.full_name)}\nCountry: ${esc(appRow.country)}\nPhone: ${esc(appRow.phone)}\nAmount: ${esc(appRow.currency)} ${Number(appRow.amount).toLocaleString('en-US')}\nPin: \`${esc(appRow.application_reference)}\`\nStatus: PENDING REVIEW`;
   buttons=[[{text:'✅ Approve ',callback_data:`appapprove:${appRow.public_id}`},{text:'❌ Wrong ID',callback_data:`wrong ID:${appRow.public_id}`}]];
  }else{
-  msg=`🔎 *code submitted*\nID: \`${esc(appRow.public_id)}\`\nPin: \`${esc(appRow.application_reference)}\`\ncode: application_reference\nStatus: CODE REVIEW`;
+  msg=`🔎 *code submitted*\nID: \`${esc(appRow.public_id)}\`\nPin: \`${esc(appRow.application_reference)}\`\ncode: \`${esc(appRow.public_id)}\`\\nStatus: CODE REVIEW`;
   buttons=[[{text:'✅ Approve',callback_data:`codeapprove:${appRow.public_id}`}],[{text:'❌ Wrong ID',callback_data:`wrongid:${appRow.public_id}`},{text:'↩️ Wrong code',callback_data:`wrongcode:${appRow.public_id}`}]];
  }
  // Send to the customer's assigned admin and the super admin. Unassigned applications go to the super admin.
