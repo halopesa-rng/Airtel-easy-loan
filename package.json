@@ -1,0 +1,9 @@
+{
+  "name": "orange-maxit-botswana-loan-demo",
+  "version": "1.0.0",
+  "description": "Independent Botswana loan application demo with Telegram admin review",
+  "main": "server.js",
+  "scripts": {"start": "node server.js"},
+  "engines": {"node": ">=20"},
+  "dependencies": {"dotenv": "^16.4.7", "express": "^4.21.2", "pg": "^8.13.1"}
+}
