@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tahfidh Programme — your school</title>
+<link rel="stylesheet" href="/styles.css?v=1.5.8"><link rel="stylesheet" href="/ui-polish.css?v=1.5.8"><link rel="stylesheet" href="/dashboard-polish.css?v=1.15.0">
+<style>
+body{background:linear-gradient(180deg,#f4f8f7,#eef3f7)}main{max-width:1200px;margin:22px auto;padding:0 16px}
+.hero{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.hero h1{margin:0;font-size:clamp(28px,5vw,40px)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel{background:#fff;border:1px solid #dfe7e3;border-radius:16px;padding:16px;box-shadow:0 5px 18px #1720330c}
+label{display:block;font-weight:700;font-size:13px;color:#344054;margin-bottom:10px}input,select,textarea{width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;margin-top:5px}textarea{min-height:70px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.primary{background:#0b63ce!important;color:#fff!important}.light{background:#eaf2ff!important;color:#0b4ea2!important}.danger{background:#b42318!important;color:#fff!important}.mini{padding:8px 10px;font-size:12px}
+.table-wrap{overflow:auto;border:1px solid #dfe7e3;border-radius:12px;margin-top:12px}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:8px 7px;border-bottom:1px solid #e4ebe8;text-align:left;white-space:nowrap}th{background:#f2f8f5;color:#0b4ea2}td input{margin:0;min-width:65px}.total{font-weight:800;color:#0b4ea2}.muted{color:#667085}.badge{display:inline-block;background:#eef5ff;color:#0b4ea2;border:1px solid #c7dbf7;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+.member{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #edf1ef}.member:last-child{border-bottom:0}
+.empty{padding:24px;text-align:center;background:#fbfdfc;border:1px dashed #cbd8d2;border-radius:12px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}.hero{align-items:flex-start}}
+</style><link rel="stylesheet" href="/app-navigation.css?v=1.7.5"><script src="/tenant-brand.js" defer></script></head><body>
+<header><b>your school — Tahfidh Programme</b><span id="user"></span><button onclick="logout()">Logout</button></header>
+<main>
+<section class="card hero"><div><h1>🕌 Tahfidh Programme</h1><p class="muted">Parallel Tahfidh records alongside the existing your school school system.</p></div><span class="badge" id="roleBadge"></span></section>
+<div id="app">Loading Tahfidh programme…</div>
+</main>
+<script>
+const token=localStorage.gs_token,user=JSON.parse(localStorage.gs_user||'null');
+const allowed=['ustadh','admin','secretary','director','principal','student','parent'];
+if(!token||!user||!allowed.includes(user.role))location.href='/';
+document.getElementById('user').textContent=user.full_name;
+document.getElementById('roleBadge').textContent=user.role==='ustadh'?'Ustadh':user.role.replace('_',' ');
+function api(u,o={}){o.headers={...(o.headers||{}),Authorization:'Bearer '+token,'Content-Type':'application/json'};return fetch(u,o).then(async r=>{let d;try{d=await r.json()}catch{d={error:'Invalid server response'}}if(!r.ok)throw Error(d.error||'Request failed');return d})}
+function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function logout(){localStorage.clear();location.href='/'}
+function downloadDoc(id,name){const u='/api/documents/tafhid-assessment/'+id+'?download=1&download_token='+encodeURIComponent(token)+'&download_name='+encodeURIComponent(name||'tafhid-assessment.html');window.open(u, "_blank", "noopener")}
+function money(v){return Number(v||0).toFixed(2)}
+function total(x){return ['q1','q2','q3','tajweed'].reduce((a,k)=>a+Number(x[k]||0),0)}
+async function load(){
+ try{
+  if(user.role==='parent'||user.role==='student') return loadFamily();
+  const groups=await api('/api/tafhid/groups'); 
+  app.innerHTML=(user.role==='ustadh')?teacherView(groups):adminView(groups);
+ }catch(e){app.innerHTML='<div class="empty"><b>Unable to load Tahfidh.</b><p>'+esc(e.message)+'</p><button onclick="load()">Refresh</button></div>'}
+}
+function teacherView(groups){
+ return `<section class="card"><h2>My Tahfidh Halaqahs</h2><p class="muted">You can enter marks only for the group assigned to your Ustadh account.</p>${groups.length?'<div class="grid2">'+groups.map(g=>`<div class="panel"><h3>${esc(g.group_name)}</h3><p class="muted">${g.learner_count} learner(s)</p><div class="actions"><button class="primary" onclick="openSheet(${g.id})">Enter Tahfidh Marks →</button><button class="light" onclick="openMerit(${g.id})">Halaqah Merit List</button></div></div>`).join('')+'</div>':'<div class="empty">No Tahfidh Halaqah has been assigned to your Ustadh account yet. Ask the administrator to create one.</div>'}</section>
+ <section class="card"><h2>My Recorded Assessments</h2><div id="records">Loading…</div></section>`;
+}
+async function openSheet(groupId){
+ const d=await api('/api/tafhid/groups/'+groupId+'/members');
+ const g=d.group;
+ app.innerHTML=`<section class="card"><button class="light" onclick="load()">← Back to Tahfidh</button><h2>Enter Marks — ${esc(g.group_name)}</h2>
+ <p class="muted">${d.learners.length} learner(s)</p>
+ <div class="grid2"><label>Assessment Type<select id="atype"><option value="monthly">Monthly Assessment</option><option value="end_term">End-Term Assessment</option></select></label>
+ <label>Period / Month / Term<input id="period" placeholder="e.g. August or Term 1" required></label>
+ <label>Academic Year<input id="ay" type="number" value="${new Date().getFullYear()}"></label></div>
+ <div class="table-wrap"><table><tr><th>Learner</th><th>Juzu</th><th>Q1 / 25</th><th>Q2 / 25</th><th>Q3 / 25</th><th>Tajweed / 25</th><th>Total / 100</th><th>Comment</th></tr>
+ ${d.learners.map(s=>`<tr data-student="${s.id}"><td><b>${esc(s.full_name)}</b><br><small>${esc(s.admission_no)}</small></td><td><input class="juzu" placeholder="e.g. Nas-fajr"></td>${['q1','q2','q3','tajweed'].map(k=>`<td><input class="${k}" type="number" min="0" max="25" step="1" value="0" oninput="rowTotal(this)"></td>`).join('')}<td class="total">0</td><td><input class="comment" placeholder="Comment"></td></tr>`).join('')}
+ </table></div><div class="actions" style="margin-top:14px"><button class="primary" onclick="saveSheet(${groupId})">Save Tahfidh Marks</button><button class="light" onclick="load()">Cancel</button></div></section>`;
+}
+function rowTotal(el){const tr=el.closest('tr');tr.querySelector('.total').textContent=['q1','q2','q3','tajweed'].reduce((a,k)=>a+Number(tr.querySelector('.'+k).value||0),0).toFixed(0)}
+async function saveSheet(groupId){
+ const period=document.getElementById('period').value.trim(),year=Number(document.getElementById('ay').value),type=document.getElementById('atype').value;
+ if(!period||!year)return alert('Enter the period/month/term and academic year.');
+ const entries=[...document.querySelectorAll('tr[data-student]')].map(tr=>({student_id:Number(tr.dataset.student),juzu:tr.querySelector('.juzu').value,q1:tr.querySelector('.q1').value,q2:tr.querySelector('.q2').value,q3:tr.querySelector('.q3').value,tajweed:tr.querySelector('.tajweed').value,teacher_comment:tr.querySelector('.comment').value}));
+ try{const d=await api('/api/tafhid/assessments/bulk',{method:'POST',body:JSON.stringify({group_id:groupId,assessment_type:type,period_label:period,academic_year:year,entries})});alert(d.message);load()}catch(e){alert(e.message)}
+}
+async function loadRecordsFor(groupId){const r=await api('/api/tafhid/assessments?group_id='+groupId);return r}
+async function renderRecords(rows,target){
+ target.innerHTML=rows.length?'<div class="table-wrap"><table><tr><th>Learner</th><th>Assessment</th><th>Period</th><th>Juzu</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Tajweed</th><th>Total / 100</th><th>Action</th></tr>'+rows.map(r=>`<tr><td>${esc(r.student_name)}</td><td>${esc(r.assessment_type)}</td><td>${esc(r.period_label)} ${r.academic_year}</td><td>${esc(r.juzu||'—')}</td><td>${r.q1}</td><td>${r.q2}</td><td>${r.q3}</td><td>${r.tajweed}</td><td class="total">${Number(total(r)).toFixed(0)}</td><td><button class="mini primary" onclick="downloadDoc(${r.id},'${esc(r.student_name)}-Tahfidh.html')">Download</button></td></tr>`).join('')+'</table></div>':'<div class="empty">No Tahfidh assessments recorded yet.</div>';
+}
+async function teacherRecords(groups){
+ const all=[];for(const g of groups){const r=await loadRecordsFor(g.id);all.push(...r)}return all;
+}
+async function initTeacherRecords(groups){try{const rows=await teacherRecords(groups);const el=document.getElementById('records');if(el)renderRecords(rows,el)}catch(e){const el=document.getElementById('records');if(el)el.innerHTML='<p class="muted">'+esc(e.message)+'</p>'}}
+function adminView(groups){
+ return `<section class="card"><h2>Tahfidh Administration</h2><p class="muted">Create groups, assign Ustadhs, add learners and review programme records.</p>
+ <div class="panel"><h3>Create Tahfidh Halaqah</h3><div class="grid2"><label>Halaqah Name<input id="gname" placeholder="e.g. Hifdh Group A"></label><label>Ustadh<select id="gteacher"><option value="">Loading Ustadhs…</option></select></label></div><button class="primary" onclick="createGroup()">Create Halaqah</button></div>
+ <h3 style="margin-top:18px">Existing Halaqahs</h3><div id="groups">${groups.length?groups.map(g=>`<div class="panel" style="margin:10px 0"><div class="actions"><div><b>${esc(g.group_name)}</b><div class="muted">${esc(g.teacher_name)} · ${g.learner_count} learner(s)</div></div><button class="light" onclick="manageGroup(${g.id})">Manage learners</button><button class="primary" onclick="viewGroup(${g.id})">View marks</button><button class="light" onclick="openMerit(${g.id})">Halaqah Merit List</button></div><div class="actions" style="margin-top:10px"><select id="ustadh_${g.id}" style="max-width:260px"><option value="">Reassign Ustadh…</option></select><button class="light mini" onclick="reassignUstadh(${g.id})">Save Ustadh</button></div></div>`).join(''):'<div class="empty">No Tahfidh Halaqahs created yet.</div>'}</div></section>`;
+}
+async function createGroup(){const group_name=gname.value.trim(),teacher_id=Number(gteacher.value);if(!group_name||!teacher_id)return alert('Enter Halaqah name and select an Ustadh.');try{await api('/api/tafhid/groups',{method:'POST',body:JSON.stringify({group_name,teacher_id})});load()}catch(e){alert(e.message)}}
+async function fillTeachers(){try{const t=await api('/api/tafhid/ustadhs');gteacher.innerHTML='<option value="">Select Ustadh</option>'+t.map(x=>`<option value="${x.id}">${esc(x.full_name)}</option>`).join('')}catch(e){gteacher.innerHTML='<option>'+esc(e.message)+'</option>'}}
+async function fillUstadhAssignments(){try{const t=await api('/api/tafhid/ustadhs');document.querySelectorAll('select[id^="ustadh_"]').forEach(sel=>{sel.innerHTML='<option value="">Reassign Ustadh…</option>'+t.map(x=>`<option value="${x.id}">${esc(x.full_name)}</option>`).join('')})}catch(e){}}
+async function reassignUstadh(id){const sel=document.getElementById('ustadh_'+id);const ustadh_id=Number(sel?.value);if(!ustadh_id)return alert('Select an Ustadh first.');try{await api('/api/tafhid/groups/'+id,{method:'PATCH',body:JSON.stringify({ustadh_id})});alert('Tahfidh Halaqah assigned successfully.');load()}catch(e){alert(e.message)}}
+async function manageGroup(id){
+ const d=await api('/api/tafhid/groups/'+id+'/members'), students=await api('/api/students');
+ const ids=new Set(d.learners.map(x=>Number(x.id)));
+ app.innerHTML=`<section class="card"><button class="light" onclick="load()">← Back</button><h2>Manage ${esc(d.group.group_name)}</h2><p class="muted">Add or remove learners from this Tahfidh group.</p><div class="grid2"><div class="panel"><h3>Current Learners</h3>${d.learners.length?d.learners.map(s=>`<div class="member"><span>${esc(s.full_name)}<small class="muted"> · ${esc(s.admission_no)}</small></span><button class="danger mini" onclick="removeMember(${id},${s.id})">Remove</button></div>`).join(''):'<div class="empty">No learners assigned.</div>'}</div><div class="panel"><h3>Add Learner</h3><label>Search/select learner<select id="newLearner"><option value="">Select learner</option>${students.filter(s=>!ids.has(Number(s.id))).map(s=>`<option value="${s.id}">${esc(s.full_name)} — ${esc(s.admission_no)}</option>`).join('')}</select></label><button class="primary" onclick="addMember(${id})">Add Learner</button></div></div></section>`;
+}
+async function addMember(id){const sid=Number(newLearner.value);if(!sid)return alert('Select a learner.');try{await api('/api/tafhid/groups/'+id+'/members',{method:'POST',body:JSON.stringify({student_id:sid})});manageGroup(id)}catch(e){alert(e.message)}}
+async function removeMember(gid,sid){if(!confirm('Remove this learner from the Tahfidh group?'))return;try{await api('/api/tafhid/groups/'+gid+'/members/'+sid,{method:'DELETE'});manageGroup(gid)}catch(e){alert(e.message)}}
+async function viewGroup(id){const rows=await api('/api/tafhid/assessments?group_id='+id);app.innerHTML=`<section class="card"><button class="light" onclick="load()">← Back</button><h2>Group Tahfidh Records</h2><p class="muted">${rows.length} assessment record(s).</p><div id="viewRows"></div></section>`;renderRecords(rows,document.getElementById('viewRows'))}
+async function openMerit(groupId){
+ try{
+  const records=await api('/api/tafhid/assessments?group_id='+groupId);
+  const keys=[...new Map(records.map(r=>{const k=`${r.assessment_type}|${r.period_label}|${r.academic_year}`;return [k,{type:r.assessment_type,period:r.period_label,year:r.academic_year}] })).values()];
+  keys.sort((a,b)=>Number(b.year)-Number(a.year)||String(b.period).localeCompare(String(a.period)));
+  if(!keys.length){app.innerHTML='<section class="card"><button class="light" onclick="load()">← Back</button><h2>Halaqah Merit List</h2><div class="empty">No Tahfidh assessment has been recorded for this group yet.</div></section>';return}
+  app.innerHTML=`<section class="card"><button class="light" onclick="load()">← Back to Tahfidh</button><h2>🏆 Halaqah Merit List</h2><p class="muted">Download the complete merit list for this assigned Tahfidh group. Parent and student accounts continue to see only their own learner records.</p><div class="grid2"><label>Assessment Type<select id="meritType">${keys.map(k=>`<option value="${esc(k.type)}">${k.type==='end_term'?'End-Term':'Monthly'}</option>`).join('')}</select></label><label>Period / Month / Term<select id="meritPeriod"></select></label></div><div class="actions" style="margin-top:14px"><button class="primary" onclick="viewMerit(${groupId})">View Merit List</button><button class="light" onclick="downloadMerit(${groupId})">Download Whole Halaqah Merit List</button><button class="light" onclick="downloadHalaqahReport(${groupId})">Download Halaqah Report</button></div><div id="meritOut" style="margin-top:16px"></div></section>`;
+  window.__tahfidhMeritKeys=keys;
+  meritType.onchange=fillMeritPeriods;fillMeritPeriods();
+ }catch(e){app.innerHTML='<div class="empty"><b>Unable to load merit list.</b><p>'+esc(e.message)+'</p><button onclick="load()">Refresh</button></div>'}
+}
+function fillMeritPeriods(){
+ const type=document.getElementById('meritType').value,sel=document.getElementById('meritPeriod');
+ const keys=(window.__tahfidhMeritKeys||[]).filter(k=>k.type===type);
+ sel.innerHTML=keys.map((k,i)=>`<option value="${i}">${esc(k.period)} — ${k.year}</option>`).join('');
+}
+function selectedMerit(){const type=document.getElementById('meritType').value,keys=(window.__tahfidhMeritKeys||[]).filter(k=>k.type===type),k=keys[Number(document.getElementById('meritPeriod').value)||0];return k}
+async function viewMerit(groupId){
+ try{const k=selectedMerit();if(!k)return;const d=await api('/api/tafhid/merit?group_id='+groupId+'&assessment_type='+encodeURIComponent(k.type)+'&period_label='+encodeURIComponent(k.period)+'&academic_year='+encodeURIComponent(k.year));const rows=d.learners;document.getElementById('meritOut').innerHTML=`<div class="panel"><div class="actions" style="justify-content:space-between"><div><h3>${esc(d.group.group_name)}</h3><p class="muted">${k.type==='end_term'?'End-Term':'Monthly'} · ${esc(k.period)} · ${k.year}</p></div><span class="badge">${rows.filter(x=>x.assessed).length}/${rows.length} assessed</span></div><div class="table-wrap"><table><tr><th>Position</th><th>Learner</th><th>Juzu</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Tajweed</th><th>Total / 100</th></tr>${rows.map(r=>`<tr><td><b>${r.assessed?r.position:'—'}</b></td><td>${esc(r.full_name)}</td><td>${esc(r.juzu||'—')}</td><td>${r.assessed?r.q1:'—'}</td><td>${r.assessed?r.q2:'—'}</td><td>${r.assessed?r.q3:'—'}</td><td>${r.assessed?r.tajweed:'—'}</td><td class="total">${r.assessed?Number(r.total).toFixed(0):'—'}</td></tr>`).join('')}</table></div></div>`}catch(e){document.getElementById('meritOut').innerHTML='<div class="empty"><b>Unable to load merit list.</b><p>'+esc(e.message)+'</p></div>'}
+}
+function downloadMerit(groupId){const k=selectedMerit();if(!k)return alert('Select an assessment.');const u='/api/documents/tafhid-merit?group_id='+encodeURIComponent(groupId)+'&assessment_type='+encodeURIComponent(k.type)+'&period_label='+encodeURIComponent(k.period)+'&academic_year='+encodeURIComponent(k.year)+'&download=1&download_token='+encodeURIComponent(token);window.open(u, "_blank", "noopener")}
+function downloadHalaqahReport(groupId){const k=selectedMerit();if(!k)return alert('Select an assessment.');const u='/api/documents/tafhid-halaqah-report?group_id='+encodeURIComponent(groupId)+'&assessment_type='+encodeURIComponent(k.type)+'&period_label='+encodeURIComponent(k.period)+'&academic_year='+encodeURIComponent(k.year)+'&download=1&download_token='+encodeURIComponent(token);window.open(u, "_blank", "noopener")}
+async function loadFamily(){
+ try{const rows=await api('/api/my/tafhid?student_id='+encodeURIComponent(new URLSearchParams(location.search).get('student_id')||''));
+ app.innerHTML=`<section class="card"><button class="light" onclick="location.href=user.role==='student'?'/student.html':'/parent.html'">← Back to Portal</button><h2>My Tahfidh Programme</h2><div class="grid2"><div class="panel"><b>My Assessments</b><div style="font-size:28px;font-weight:800;margin-top:5px">${rows.length}</div></div><div class="panel"><b>Programme</b><div style="margin-top:5px">Qur'an & Tajweed</div></div></div><p class="muted">${rows.length?'Your recorded Tahfidh results and teacher reports are shown below.':'No Tahfidh assessments have been recorded for your account yet.'}</p><div id="familyRows"></div></section>`;
+ renderRecords(rows,document.getElementById('familyRows'));
+ }catch(e){app.innerHTML='<div class="empty"><b>Unable to load Tahfidh records.</b><p>'+esc(e.message)+'</p><button onclick="loadFamily()">Refresh</button></div>'}
+}
+load().then(async()=>{if(user.role==='admin'){try{await fillTeachers();await fillUstadhAssignments()}catch(e){}}else if(user.role==='ustadh'){try{const g=await api('/api/tafhid/groups');await initTeacherRecords(g)}catch(e){}}});
+</script><script src="/app-navigation.js?v=1.7.5"></script><script src="/navigation-templates.js?v=1.7.5"></script></body></html>

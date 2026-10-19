@@ -1,0 +1,257 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Patron / Boarding Master — your school</title><link rel="stylesheet" href="/styles.css?v=1.5.5"><link rel="stylesheet" href="/ui-polish.css?v=1.5.5"><link rel="stylesheet" href="/dashboard-polish.css?v=1.15.0"><link rel="stylesheet" href="/app-navigation.css?v=1.7.5"><style>
+body{background:linear-gradient(180deg,#f4f8f7,#eef3f7)}header{padding:16px 22px;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px #0002}main{max-width:1200px;margin:24px auto;padding:0 16px}.hero{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.hero h1{margin:0 0 6px;font-size:clamp(27px,5vw,40px)}.muted{color:#667085}.badge{display:inline-flex;background:#e7f5ee;color:#075f3c;border:1px solid #cce7d9;border-radius:999px;padding:8px 12px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:18px 0}.stat{background:#fff;border:1px solid #dfe7e3;border-radius:16px;padding:18px;box-shadow:0 5px 18px #1720330c}.stat span{display:block;color:#667085;font-size:12px}.stat strong{display:block;font-size:30px;color:#08623d;margin-top:5px}.section-title{margin:24px 0 10px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}.tile{border:1px solid #dfe7e3;background:#fff!important;color:#172033!important;text-align:left;min-height:150px;padding:20px;border-radius:18px;box-shadow:0 5px 18px #1720330c;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;cursor:pointer}.tile:hover{transform:translateY(-2px);border-color:#9bcdb7}.tile .icon{font-size:30px}.tile b{font-size:18px}.tile small{color:#667085;line-height:1.45}.general{margin-top:26px;border-top:2px solid #dfe7e3;padding-top:18px}.detail{margin-top:18px}.actions{display:flex;gap:8px;flex-wrap:wrap}.danger{background:#b42318!important}.success{background:#16803c!important}.mini{padding:7px 10px;font-size:12px}@media(max-width:700px){header{position:static}}
+</style><script src="/tenant-brand.js" defer></script></head><body><header><b>your school — Patron / Boarding Master</b><span id="user"></span><button onclick="logout()">Logout</button></header><main><section class="card hero"><div><h1>Boarding & Welfare Centre</h1><p class="muted">Manage active boarders, daily boarding attendance, welfare incidents and boarding records.</p></div><span class="badge">✓ Patron Access</span></section><div id="stats" class="stats"></div><h2 class="section-title">Patron Functions</h2><div id="tiles" class="tiles"></div><section id="detail" class="card detail" hidden><div id="body"></div></section><section class="general"><h2>General Staff Access</h2><div class="tiles"><button class="tile" onclick="myPayroll()"><span class="icon">💼</span><b>My Payroll</b><small>View your own payroll status and published payslips.</small><span>Open →</span></button><button class="tile" onclick="communication()"><span class="icon">📢</span><b>Communication</b><small>Read school communications sent to staff or the Patron role.</small><span>Open →</span></button><button class="tile" onclick="attendance()"><span class="icon">🕘</span><b>My Sign In / Out</b><small>Record your own daily staff attendance.</small><span>Open →</span></button><button class="tile" onclick="leave()"><span class="icon">📄</span><b>My Leave</b><small>Submit and track your leave request.</small><span>Open →</span></button></div></section></main><script>
+const token = localStorage.gs_token;
+const user = JSON.parse(localStorage.gs_user || 'null');
+if (!token || !user || user.role !== 'patron') location.href = '/';
+
+document.getElementById('user').textContent = `${user.full_name} (Patron / Boarding Master)`;
+const stats = document.getElementById('stats');
+const tiles = document.getElementById('tiles');
+const detail = document.getElementById('detail');
+const body = document.getElementById('body');
+
+function api(url, options = {}) {
+  options.headers = { ...(options.headers || {}), Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  return fetch(url, options).then(async response => {
+    let data = {};
+    try { data = await response.json(); } catch (_) {}
+    if (!response.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  });
+}
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function table(headers, rows) {
+  return `<div style="overflow:auto"><table><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>${rows.join('')}</table></div>`;
+}
+function shell(title, subtitle, html) {
+  detail.hidden = false;
+  body.innerHTML = `<button class="gs-back" onclick="back()">← Back to Patron Dashboard</button><h2>${esc(title)}</h2><p class="muted">${esc(subtitle || '')}</p>${html}`;
+  requestAnimationFrame(() => detail.scrollIntoView({behavior:'smooth', block:'start'}));
+}
+async function logout(){
+  try { await fetch('/api/auth/logout',{method:'POST',headers:{Authorization:`Bearer ${token}`}}); } catch (_) {}
+  localStorage.removeItem('gs_token');
+  localStorage.removeItem('gs_user');
+  sessionStorage.clear();
+  location.replace('/');
+}
+async function downloadFile(url, filename){
+  const response = await fetch(url, {headers:{Authorization:`Bearer ${token}`}});
+  if(!response.ok){
+    let message='Download failed';
+    try { const d=await response.json(); message=d.error||message; } catch(_) { try { message=await response.text()||message; } catch(__){} }
+    throw new Error(message);
+  }
+  const blob=await response.blob();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function back() {
+  detail.hidden = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function refresh() {
+  try {
+    const d = await api('/api/patron/overview');
+    stats.innerHTML = `
+      <div class="stat"><span>Active Boarders</span><strong>${d.boarders}</strong></div>
+      <div class="stat"><span>Present Today</span><strong>${d.present_today}</strong></div>
+      <div class="stat"><span>Open Welfare Issues</span><strong>${d.open_incidents}</strong></div>`;
+    tiles.innerHTML = [
+      ['🏠','Boarding Register','Add, update and remove active boarders','boarders'],
+      ['🕘','Boarding Attendance','Mark daily presence, absence, late or excused','boardingAttendance'],
+      ['🧑‍⚕️','Welfare / Incidents','Record follow-up and resolve boarding incidents','incidents'],
+      ['📊','Boarding Reports','Download attendance, welfare and boarding summary reports','boardingReports']
+    ].map(x => `<button class="tile" onclick="${x[3]}()"><span class="icon">${x[0]}</span><b>${x[1]}</b><small>${x[2]}</small><span>Open →</span></button>`).join('');
+  } catch (e) {
+    stats.innerHTML = `<div class="stat"><span>System status</span><strong>—</strong><small>${esc(e.message)}</small></div>`;
+  }
+}
+
+async function boarders() {
+  try {
+    const [rows, students] = await Promise.all([api('/api/patron/boarders'), api('/api/patron/students')]);
+    const studentOptions = students.map(x => `<option value="${x.id}">${esc(x.full_name)} — ${esc(x.admission_no)} — ${esc(x.class_name || '')}</option>`).join('');
+    const boarderRows = rows.map(x => `<tr>
+      <td><b>${esc(x.full_name)}</b><br><small>${esc(x.admission_no)}</small></td>
+      <td>${esc(x.class_name || '')}</td><td>${esc(x.house || '—')}</td><td>${esc(x.hostel || '—')}</td>
+      <td>${esc(x.room || '—')}</td><td>${esc(x.bed_no || '—')}</td><td>${esc(x.boarding_status)}</td>
+      <td><button class="mini" onclick='editBoarder(${x.id}, ${JSON.stringify(x)})'>Edit</button>
+      <button class="mini danger" onclick="removeBoarder(${x.id})">Remove</button></td></tr>`);
+    shell('Boarding Register', 'Maintain active boarding placements.', `
+      <div class="card"><h3>Add / Re-admit Boarder</h3>
+        <form id="bf" class="grid">
+          <select id="bs" required><option value="">Select student</option>${studentOptions}</select>
+          <input id="bh" placeholder="House"><input id="bho" placeholder="Hostel / Dormitory"><input id="br" placeholder="Room"><input id="bb" placeholder="Bed No.">
+          <input id="bd" type="date"><input id="bn" placeholder="Boarding note" style="grid-column:1/-1"><button>Save Boarder</button>
+        </form>
+      </div>${table(['Student','Class','House','Hostel','Room','Bed','Status','Action'], boarderRows)}`);
+    document.getElementById('bf').onsubmit = async event => {
+      event.preventDefault();
+      const button = event.target.querySelector('button'); button.disabled = true;
+      try {
+        await api('/api/patron/boarders', { method:'POST', body: JSON.stringify({
+          student_id: document.getElementById('bs').value, house: document.getElementById('bh').value,
+          hostel: document.getElementById('bho').value, room: document.getElementById('br').value,
+          bed_no: document.getElementById('bb').value, admitted_on: document.getElementById('bd').value,
+          notes: document.getElementById('bn').value
+        })});
+        alert('Boarding record saved.'); await boarders(); await refresh();
+      } catch (e) { alert(e.message); } finally { button.disabled = false; }
+    };
+  } catch (e) { shell('Boarding Register', '', `<p class="err">${esc(e.message)}</p>`); }
+}
+async function editBoarder(id, x) {
+  const fields = [['House','house'],['Hostel / Dormitory','hostel'],['Room','room'],['Bed No.','bed_no'],['Admitted on','admitted_on'],['Note','notes']];
+  const values = {};
+  for (const [label, key] of fields) { const value = prompt(`${label}:`, x[key] || ''); if (value === null) return; values[key] = value; }
+  try { await api(`/api/patron/boarders/${id}`, { method:'PATCH', body:JSON.stringify(values) }); await boarders(); await refresh(); } catch(e) { alert(e.message); }
+}
+async function removeBoarder(id) {
+  if (!confirm('Remove this learner from active boarding?')) return;
+  try { await api(`/api/patron/boarders/${id}`, {method:'DELETE'}); await boarders(); await refresh(); } catch(e) { alert(e.message); }
+}
+
+async function boardingAttendance() {
+  try {
+    const date = new Date().toISOString().slice(0,10);
+    const rows = await api(`/api/patron/attendance?date=${encodeURIComponent(date)}`);
+    const htmlRows = rows.map(x => `<tr data-student="${x.student_id}">
+      <td><b>${esc(x.full_name)}</b><br><small>${esc(x.admission_no)}</small></td><td>${esc(x.class_name || '')}</td><td>${esc(x.house || '—')}</td>
+      <td><select class="ast"><option value="present" ${x.status==='present'?'selected':''}>Present</option><option value="absent" ${x.status==='absent'?'selected':''}>Absent</option><option value="late" ${x.status==='late'?'selected':''}>Late</option><option value="excused" ${x.status==='excused'?'selected':''}>Excused</option></select></td>
+      <td><input class="aci" type="time" value="${esc(x.check_in || '')}"></td><td><input class="aco" type="time" value="${esc(x.check_out || '')}"></td><td><input class="anote" value="${esc(x.notes || '')}"></td></tr>`);
+    shell('Boarding Attendance', `Record daily boarding attendance for ${date}.`, `<div class="actions"><button onclick="saveAttendance()" class="success">Save Attendance</button><button onclick="boardingAttendance()">Refresh</button></div><div id="attTable">${table(['Student','Class','House','Status','Check In','Check Out','Notes'], htmlRows)}</div>`);
+  } catch(e) { shell('Boarding Attendance','',`<p class="err">${esc(e.message)}</p>`); }
+}
+async function saveAttendance() {
+  const rows = [...document.querySelectorAll('#attTable tr[data-student]')].map(tr => ({
+    student_id: tr.dataset.student, status: tr.querySelector('.ast').value, check_in: tr.querySelector('.aci').value,
+    check_out: tr.querySelector('.aco').value, notes: tr.querySelector('.anote').value
+  }));
+  try { await api('/api/patron/attendance', {method:'POST', body:JSON.stringify({attendance_date:new Date().toISOString().slice(0,10), rows})}); alert('Boarding attendance saved.'); await refresh(); } catch(e) { alert(e.message); }
+}
+
+async function incidents() {
+  try {
+    const [rows, boardersList] = await Promise.all([api('/api/patron/incidents'), api('/api/patron/boarders')]);
+    const options = boardersList.map(x => `<option value="${x.student_id}">${esc(x.full_name)} — ${esc(x.admission_no)}</option>`).join('');
+    const incidentRows = rows.map(x => `<tr><td>${esc(x.incident_date)}</td><td>${esc(x.full_name)}<br><small>${esc(x.admission_no)}</small></td><td>${esc(x.category)}</td><td>${esc(x.status)}</td><td>${esc(x.description)}</td><td>${esc(x.action_taken || '—')}</td><td>${esc(x.follow_up || '—')}<br><button class="mini" onclick='editIncident(${x.id}, ${JSON.stringify(x)})'>Edit</button> <button class="mini danger" onclick="deleteIncident(${x.id})">Delete</button></td></tr>`);
+    shell('Welfare / Incidents','Record, track and resolve boarding welfare issues.', `<div class="card"><h3>Record Incident / Welfare Note</h3>
+      <form id="incidentForm" class="grid"><select id="incidentStudent" required><option value="">Select boarder</option>${options}</select>
+      <input id="incidentDate" type="date" value="${new Date().toISOString().slice(0,10)}"><input id="incidentCategory" value="General" placeholder="Category">
+      <select id="incidentStatus"><option value="open">Open</option><option value="follow_up">Follow-up</option><option value="resolved">Resolved</option></select>
+      <textarea id="incidentDescription" placeholder="Description" required style="grid-column:1/-1;min-height:90px"></textarea>
+      <textarea id="incidentAction" placeholder="Action taken" style="grid-column:1/-1;min-height:70px"></textarea>
+      <textarea id="incidentFollow" placeholder="Follow-up plan" style="grid-column:1/-1;min-height:70px"></textarea><button>Save Welfare Record</button></form></div>
+      ${table(['Date','Student','Category','Status','Description','Action','Follow-up'], incidentRows)}`);
+    document.getElementById('incidentForm').onsubmit = async event => {
+      event.preventDefault(); const button = event.target.querySelector('button'); button.disabled = true;
+      try { await api('/api/patron/incidents', {method:'POST', body:JSON.stringify({
+        student_id:document.getElementById('incidentStudent').value, incident_date:document.getElementById('incidentDate').value,
+        category:document.getElementById('incidentCategory').value, description:document.getElementById('incidentDescription').value,
+        action_taken:document.getElementById('incidentAction').value, follow_up:document.getElementById('incidentFollow').value,
+        status:document.getElementById('incidentStatus').value
+      })}); alert('Welfare record saved.'); await incidents(); await refresh(); } catch(e) { alert(e.message); } finally { button.disabled = false; }
+    };
+  } catch(e) { shell('Welfare / Incidents','',`<p class="err">${esc(e.message)}</p>`); }
+}
+async function editIncident(id, x) {
+  const values = {};
+  for (const [label,key] of [['Category','category'],['Description','description'],['Action taken','action_taken'],['Follow-up','follow_up'],['Status','status']]) { const v=prompt(`${label}:`,x[key]||''); if(v===null)return; values[key]=v; }
+  try { await api(`/api/patron/incidents/${id}`,{method:'PATCH',body:JSON.stringify(values)}); await incidents(); await refresh(); } catch(e) { alert(e.message); }
+}
+async function deleteIncident(id) {
+  if (!confirm('Delete this welfare record?')) return;
+  try { await api(`/api/patron/incidents/${id}`,{method:'DELETE'}); await incidents(); await refresh(); } catch(e) { alert(e.message); }
+}
+
+async function boardingReports() {
+  const today = new Date().toISOString().slice(0,10);
+  shell('Boarding Reports','Generate and download official boarding attendance, welfare and summary reports.', `
+    <div class="card"><h3>Report Filters</h3>
+      <div class="grid">
+        <label>From <input id="rFrom" type="date" value="${today}"></label>
+        <label>To <input id="rTo" type="date" value="${today}"></label>
+        <input id="rClass" placeholder="Class (optional)">
+        <input id="rHouse" placeholder="House (optional)">
+        <select id="rStatus"><option value="">All Attendance Statuses</option><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option><option value="excused">Excused</option></select>
+        <select id="wStatus"><option value="">All Welfare Statuses</option><option value="open">Open</option><option value="follow_up">Follow-up</option><option value="resolved">Resolved</option></select>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="success" onclick="loadBoardingSummary()">View Summary</button>
+        <button onclick="viewBoardingAttendanceReport()">View Attendance</button>
+        <button onclick="viewBoardingWelfareReport()">View Welfare</button>
+        <button onclick="downloadBoardingReport('attendance')">Download Attendance</button>
+        <button onclick="downloadBoardingReport('welfare')">Download Welfare</button>
+      </div>
+    </div><div id="reportOutput" class="card"><p class="muted">Choose a report above.</p></div>`);
+  await loadBoardingSummary();
+}
+function reportParams(extra={}) {
+  const p=new URLSearchParams({from:document.getElementById('rFrom').value,to:document.getElementById('rTo').value,...extra});
+  return p;
+}
+async function loadBoardingSummary(){
+  try{const d=await api(`/api/patron/reports/summary?${reportParams()}`);document.getElementById('reportOutput').innerHTML=`
+    <h3>Boarding Summary</h3><p class="muted">${esc(d.from)} to ${esc(d.to)}</p>
+    <div class="stats"><div class="stat"><span>Active Boarders</span><strong>${d.boarders.active}</strong></div><div class="stat"><span>Attendance Entries</span><strong>${d.attendance.total}</strong></div><div class="stat"><span>Present</span><strong>${d.attendance.present}</strong></div><div class="stat"><span>Welfare Records</span><strong>${d.welfare.total}</strong></div></div>
+    <h4>House / Hostel Occupancy</h4>${table(['House','Hostel','Boarders'],d.houses.map(x=>`<tr><td>${esc(x.house)}</td><td>${esc(x.hostel)}</td><td>${x.boarders}</td></tr>`))}
+    <h4>Attendance Summary</h4>${table(['Present','Absent','Late','Excused'],[`<tr><td>${d.attendance.present}</td><td>${d.attendance.absent}</td><td>${d.attendance.late}</td><td>${d.attendance.excused}</td></tr>`])}
+    <h4>Welfare Summary</h4>${table(['Open','Follow-up','Resolved'],[`<tr><td>${d.welfare.open}</td><td>${d.welfare.follow_up}</td><td>${d.welfare.resolved}</td></tr>`])}`;}
+  catch(e){document.getElementById('reportOutput').innerHTML=`<p class="err">${esc(e.message)}</p>`}
+}
+async function viewBoardingAttendanceReport(){
+  try{const p=reportParams({class_name:document.getElementById('rClass').value,house:document.getElementById('rHouse').value,status:document.getElementById('rStatus').value});const d=await api(`/api/patron/reports/attendance?${p}`);document.getElementById('reportOutput').innerHTML=`<h3>Boarding Attendance Report</h3><p class="muted">${esc(d.from)} to ${esc(d.to)}</p>${table(['Date','Admission','Student','Class','House','Hostel','Room','Status','In','Out','Notes'],d.rows.map(x=>`<tr><td>${esc(x.attendance_date)}</td><td>${esc(x.admission_no)}</td><td>${esc(x.full_name)}</td><td>${esc(x.class_name||'')}</td><td>${esc(x.house)}</td><td>${esc(x.hostel)}</td><td>${esc(x.room)}</td><td>${esc(x.status)}</td><td>${esc(x.check_in||'—')}</td><td>${esc(x.check_out||'—')}</td><td>${esc(x.notes||'')}</td></tr>`))}`;}
+  catch(e){document.getElementById('reportOutput').innerHTML=`<p class="err">${esc(e.message)}</p>`}
+}
+async function viewBoardingWelfareReport(){
+  try{const p=reportParams({category:'',status:document.getElementById('wStatus').value});const d=await api(`/api/patron/reports/welfare?${p}`);document.getElementById('reportOutput').innerHTML=`<h3>Boarding Welfare / Incident Report</h3><p class="muted">${esc(d.from)} to ${esc(d.to)}</p>${table(['Date','Admission','Student','Class','House','Category','Status','Description','Action','Follow-up','Recorded By'],d.rows.map(x=>`<tr><td>${esc(x.incident_date)}</td><td>${esc(x.admission_no)}</td><td>${esc(x.full_name)}</td><td>${esc(x.class_name||'')}</td><td>${esc(x.house)}</td><td>${esc(x.category)}</td><td>${esc(x.status)}</td><td>${esc(x.description)}</td><td>${esc(x.action_taken||'—')}</td><td>${esc(x.follow_up||'—')}</td><td>${esc(x.creator||'—')}</td></tr>`))}`;}
+  catch(e){document.getElementById('reportOutput').innerHTML=`<p class="err">${esc(e.message)}</p>`}
+}
+async function downloadBoardingReport(type){
+  try{const extra=type==='attendance'?{class_name:document.getElementById('rClass').value,house:document.getElementById('rHouse').value,status:document.getElementById('rStatus').value}:{status:document.getElementById('wStatus').value};const r=await fetch(`/api/patron/reports/${type}?${reportParams(extra)}&download=1`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});if(!r.ok)throw Error(await r.text()||'Download failed');const b=await r.blob(),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`boarding-${type}-report.pdf`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500)}catch(e){alert(e.message)}}
+
+async function communication() {
+  try {
+    const rows = await api('/api/communications');
+    shell('Communication Centre','School communications relevant to the Patron role.', rows.length ? rows.map(x => `<div class="card"><b>${esc(x.title)}</b><p class="muted">${new Date(x.created_at).toLocaleString()} · ${esc(x.sender || 'School Administration')}</p><p>${esc(x.message).replace(/\n/g,'<br>')}</p></div>`).join('') : '<div class="empty-state">No communications have been posted yet.</div>');
+  } catch(e) { shell('Communication Centre','',`<p class="err">${esc(e.message)}</p>`); }
+}
+async function downloadPayslip(entryId, period){
+  try { await downloadFile(`/api/documents/payslip/${entryId}?download=1`, `Green-Star-Payslip-${period}.html`); } catch(e) { alert(e.message); }
+}
+async function myPayroll() {
+  try {
+    const d = await api('/api/my/payroll');
+    const entries = Array.isArray(d) ? d : (Array.isArray(d.entries) ? d.entries : []);
+    const staff = d && d.staff ? d.staff : user;
+    const rows = entries.map(x => `<tr><td>${x.payroll_year}-${String(x.payroll_month).padStart(2,'0')}</td><td>KSh ${Number(x.gross_pay||0).toLocaleString()}</td><td>KSh ${Number(x.total_deductions||0).toLocaleString()}</td><td><b>KSh ${Number(x.net_pay||0).toLocaleString()}</b></td><td>${esc(x.status||x.period_status||'—')}</td><td><button onclick="downloadPayslip(${x.id}, '${x.payroll_year}-${String(x.payroll_month).padStart(2,'0')}')">Download</button></td></tr>`);
+    shell('My Payroll','Your own payroll status and published payslips.', `<div class="card"><h3>${esc(staff.full_name)}</h3>${table(['Month','Gross','Deductions','Net','Status','Payslip'],rows)}</div>`);
+  } catch(e) { shell('My Payroll','',`<p class="err">${esc(e.message)}</p>`); }
+}
+async function attendance() {
+  try {
+    const rows = await api('/api/staff-attendance/my');
+    shell('My Sign In / Out','Your own staff attendance.', `<div class="actions"><button onclick="staffIn()">✓ Sign In Now</button><button onclick="staffOut()">↪ Sign Out Now</button></div>${table(['Date','Sign In','Sign Out'], rows.map(x => `<tr><td>${esc(x.attendance_date)}</td><td>${x.check_in?new Date(x.check_in).toLocaleTimeString():'—'}</td><td>${x.check_out?new Date(x.check_out).toLocaleTimeString():'—'}</td></tr>`))}`);
+  } catch(e) { shell('My Sign In / Out','',`<p class="err">${esc(e.message)}</p>`); }
+}
+async function staffIn(){try{await api('/api/staff-attendance/check-in',{method:'POST'});await attendance();}catch(e){alert(e.message)}}
+async function staffOut(){try{await api('/api/staff-attendance/check-out',{method:'POST'});await attendance();}catch(e){alert(e.message)}}
+async function leave() {
+  try {
+    const rows = await api('/api/leave-requests');
+    shell('My Leave','Submit and track leave requests.', `<form id="leaveForm" class="grid"><select id="leaveType"><option>Annual Leave</option><option>Sick Leave</option><option>Personal Leave</option><option>Emergency Leave</option><option>Other</option></select><input id="leaveStart" type="date" required><input id="leaveEnd" type="date" required><textarea id="leaveReason" placeholder="Reason" required style="grid-column:1/-1;min-height:90px"></textarea><button>Submit to Director</button></form>${table(['Type','Dates','Status','Note'],rows.map(x=>`<tr><td>${esc(x.leave_type)}</td><td>${esc(x.start_date)} to ${esc(x.end_date)}</td><td>${esc(x.status)}</td><td>${esc(x.director_note||'—')}</td></tr>`))}`);
+    document.getElementById('leaveForm').onsubmit = async event => { event.preventDefault(); try { await api('/api/leave-requests',{method:'POST',body:JSON.stringify({leave_type:document.getElementById('leaveType').value,start_date:document.getElementById('leaveStart').value,end_date:document.getElementById('leaveEnd').value,reason:document.getElementById('leaveReason').value})}); alert('Leave request sent.'); await leave(); } catch(e){alert(e.message);} };
+  } catch(e) { shell('My Leave','',`<p class="err">${esc(e.message)}</p>`); }
+}
+refresh();
+</script></body></html>

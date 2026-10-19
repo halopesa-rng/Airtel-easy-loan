@@ -1,0 +1,58 @@
+/* your school — shared responsive UI layer. Presentation only; no business logic. */
+:root{--gs-green:#08623d;--gs-green-2:#0b8050;--gs-blue:#0879a6;--gs-ink:#172033;--gs-muted:#667085;--gs-bg:#f3f6fa;--gs-line:#dfe7ee;--gs-soft:#eef6f2;--gs-shadow:0 8px 26px rgba(16,42,67,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--gs-bg);color:var(--gs-ink);line-height:1.45;overflow-x:hidden}header{background:linear-gradient(135deg,var(--gs-green),var(--gs-green-2));box-shadow:0 2px 14px rgba(0,0,0,.12);min-height:64px}main{width:min(1240px,100%);margin:0 auto;padding:24px 18px 42px}.card{border:1px solid var(--gs-line);border-radius:18px;background:#fff;box-shadow:var(--gs-shadow);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.card:hover{box-shadow:0 10px 30px rgba(16,42,67,.11)}
+button,.nav,.tile{font:inherit}.nav,.tile{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.nav:hover,.tile:hover{transform:translateY(-2px);border-color:#9bcbb7;box-shadow:0 10px 26px rgba(16,42,67,.12)}.nav:active,.tile:active{transform:translateY(0)}
+button{font-weight:700;min-height:42px}button:focus-visible,.nav:focus-visible,.tile:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(8,121,166,.25);outline-offset:2px}
+input,select,textarea{max-width:100%;font:inherit}textarea{resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.actions>*{margin:0}.grid{align-items:stretch}.grid>.card,.grid>.nav,.grid>.tile{min-width:0}.stat{letter-spacing:-.02em}table{min-width:680px}div[style*="overflow:auto"]{max-width:100%;-webkit-overflow-scrolling:touch}
+.tiles,.role-grid,.cards{align-items:stretch}.tile{border:1px solid var(--gs-line);border-radius:18px;background:#fff;color:var(--gs-ink);padding:18px;text-decoration:none}.tile .icon{line-height:1}.tile b{font-size:17px;margin-top:7px}.tile small{color:var(--gs-muted);line-height:1.35}.tile span:last-child{color:var(--gs-green);font-size:13px;font-weight:800;margin-top:8px}
+.section-title{gap:14px;flex-wrap:wrap}.muted{color:var(--gs-muted)}.err{color:#b42318;font-weight:700}.empty{padding:24px;text-align:center;color:var(--gs-muted);background:#f8fafc;border:1px dashed var(--gs-line);border-radius:14px}
+/* Keep controls and tables inside their cards on small screens. */
+.card,.hero,.detail,.tile,.nav{overflow-wrap:anywhere}.actions button{white-space:normal}.tablewrap,.card>div[style*="overflow:auto"]{overflow-x:auto}
+@media(max-width:800px){main{padding:16px 12px 32px}.grid{grid-template-columns:1fr 1fr}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{align-items:stretch}.card{border-radius:16px}}
+@media(max-width:560px){header{padding:14px 12px!important}main{padding:12px 10px 28px}.grid,.tiles,.role-grid{grid-template-columns:1fr!important}.card{padding:15px!important;border-radius:15px}.tile{min-height:118px;padding:16px}.tile .icon{font-size:27px}.stat{font-size:26px}.actions{display:grid;grid-template-columns:1fr;width:100%}.actions button,.actions a{width:100%;text-align:center}.tablewrap table,div[style*="overflow:auto"] table{font-size:12px}h1{font-size:27px!important}h2{font-size:21px}h3{font-size:17px}}
+/* Shared compact dashboard navigation. */
+.gs-dashboard-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 18px}.gs-dashboard-card{appearance:none;border:1px solid var(--gs-line);background:#fff;color:var(--gs-ink);border-radius:16px;padding:16px;text-align:left;box-shadow:0 5px 18px rgba(16,42,67,.06);min-height:108px;display:flex;flex-direction:column;justify-content:space-between}.gs-dashboard-card .gs-icon{font-size:25px}.gs-dashboard-card .gs-title{font-weight:800;font-size:16px}.gs-dashboard-card .gs-desc{font-size:12px;color:var(--gs-muted)}.gs-dashboard-card .gs-open{font-size:12px;color:var(--gs-green);font-weight:800}@media(max-width:800px){.gs-dashboard-nav{grid-template-columns:1fr 1fr}}@media(max-width:480px){.gs-dashboard-nav{grid-template-columns:1fr}}
+/* Detail sections are opened by a dashboard card. */
+.gs-collapsed{display:none!important}.gs-back{background:#0879a6!important;margin-bottom:12px}
+
+/* v1.3.4 dashboard navigation: shared buttons must keep readable text on white cards. */
+.nav{appearance:none!important;background:#fff!important;color:var(--gs-ink)!important;border:1px solid var(--gs-line)!important;border-radius:18px!important;padding:18px!important;min-height:118px!important;text-align:left!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:7px!important;box-shadow:var(--gs-shadow)!important;white-space:normal!important;line-height:1.25!important}
+.nav::first-line{color:var(--gs-ink)}
+.nav:hover{background:#fbfefd!important;color:var(--gs-ink)!important;border-color:#9bcbb7!important}
+.nav:focus-visible{color:var(--gs-ink)!important}
+.nav:not(.tile){font-weight:800}
+.nav .icon,.nav .gs-icon{font-size:28px;line-height:1}
+.nav small{display:block;color:var(--gs-muted);font-weight:500}
+.gs-page-hero{padding:20px}
+.gs-dashboard-nav{width:100%}
+.gs-dashboard-card{min-width:0;overflow-wrap:anywhere;white-space:normal}
+/* Compact dashboard metric cards */
+#stats.grid,.stats{margin-bottom:18px}
+#stats.grid>.card{min-height:104px;display:flex;flex-direction:column;justify-content:center}
+/* Prevent controls and headings from creating horizontal overflow on phones. */
+header{flex-wrap:wrap!important}
+header b,header span{min-width:0;overflow-wrap:anywhere}
+@media(max-width:560px){.nav{min-height:108px!important;padding:16px!important}.nav .icon,.nav .gs-icon{font-size:26px}.nav{font-size:16px}.nav small{font-size:12px}.gs-dashboard-card{min-height:120px}}
+/* v1.3.5: force readable dashboard navigation across legacy pages. */
+button.gs-dashboard-card{color:var(--gs-ink)!important;background:#fff!important;-webkit-text-fill-color:var(--gs-ink)!important;}
+button.gs-dashboard-card .gs-title{color:var(--gs-ink)!important;-webkit-text-fill-color:var(--gs-ink)!important;}
+button.gs-dashboard-card .gs-desc{color:var(--gs-muted)!important;-webkit-text-fill-color:var(--gs-muted)!important;}
+button.gs-dashboard-card .gs-open{color:var(--gs-green)!important;-webkit-text-fill-color:var(--gs-green)!important;}
+.secretary-nav{margin-bottom:16px}.gs-detail-panel{margin-top:4px}.gs-page-hero{margin-bottom:14px}
+@media(max-width:560px){.secretary-nav{gap:10px}.gs-dashboard-card{min-height:112px!important;padding:15px!important}}
+
+/* your school final finishing layer — presentation and interaction only. */
+:root{--gs-green:#087a4b;--gs-green-dark:#075f3c;--gs-ink:#172033;--gs-muted:#667085;--gs-line:#dfe7e3;--gs-soft:#f4f8f6}
+html{scroll-behavior:smooth}body{min-width:0;overflow-x:hidden}main{width:min(1180px,100%);margin-inline:auto}button,a,input,select,textarea{touch-action:manipulation}button{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,opacity .12s ease}button:hover:not(:disabled){box-shadow:0 5px 14px rgba(23,32,51,.10)}button:active:not(:disabled){transform:translateY(1px)}button:disabled{opacity:.6;cursor:not-allowed}.card{min-width:0;overflow:hidden}.grid,.grid2,.tiles,.role-grid,.cards{min-width:0}.grid>*,.grid2>*{min-width:0}input,select,textarea{min-width:0;max-width:100%}.table-wrap,div[style*="overflow:auto"]{width:100%;max-width:100%;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch}.table-wrap table,div[style*="overflow:auto"] table{width:100%;min-width:680px}.actions{min-width:0}.actions button{max-width:100%}.gs-detail-panel,[id="detail"],#panel{scroll-margin-top:86px}.gs-back{position:sticky;top:72px;z-index:4}.developer-number:empty{display:none}.developer-credit:empty{display:none}
+@media(max-width:700px){main{width:100%;padding-left:10px!important;padding-right:10px!important}.card{border-radius:14px!important}.table-wrap table,div[style*="overflow:auto"] table{min-width:620px}.gs-back{top:62px}.actions{width:100%}.actions button{width:auto;min-height:42px}}
+@media(max-width:430px){.actions button{width:100%}.gs-back{position:static}}
+
+/* FINAL v1.3.15 — professional blue theme and card-to-detail navigation */
+:root{--gs-green:#0b63ce;--gs-green-2:#155eef;--gs-green-dark:#0b4ea2;--gs-blue:#0b63ce;--gs-soft:#eef5ff;--gs-line:#d9e3f0}
+header{background:linear-gradient(135deg,#0b63ce,#155eef)!important}
+.gs-dashboard-card .gs-open,.tile span:last-child,.gs-open{color:#0b63ce!important}
+.gs-dashboard-card:hover,.tile:hover,.teacher-tile:hover{border-color:#a9c7f5!important}
+.gs-back,.back{background:#eef5ff!important;color:#0b4ea2!important;border-color:#c7dbf7!important}
+.gs-cards-hidden{display:none!important}
+#studentDetail:not(.gs-collapsed),#childDetail:not(.gs-collapsed){animation:gsFade .18s ease}
+@keyframes gsFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}

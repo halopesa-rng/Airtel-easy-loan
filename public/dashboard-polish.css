@@ -1,0 +1,28 @@
+/* your school Dashboard Polish v1.15.0 — visual/navigation only */
+:root{--gs-green:#087a4b;--gs-green-dark:#075f3c;--gs-blue:#0b7ea8;--gs-ink:#172033;--gs-muted:#667085;--gs-line:#dfe7e3;--gs-soft:#f4f8f6}
+html{scroll-behavior:smooth}body{background:linear-gradient(180deg,#f6faf8 0%,#eef3f7 100%);color:var(--gs-ink)}
+header{position:sticky!important;top:0;z-index:50;box-shadow:0 2px 14px rgba(16,40,32,.10)}
+main{max-width:1180px!important;margin:18px auto!important;padding-left:16px!important;padding-right:16px!important}
+.card{border-radius:18px!important;border-color:var(--gs-line)!important;box-shadow:0 5px 18px rgba(23,32,51,.055)!important}
+.gs-dashboard-nav,.tiles{gap:12px!important;margin:14px 0 18px!important}
+.gs-dashboard-card,.tile,.teacher-tile{border-radius:15px!important;min-height:112px!important;padding:15px 16px!important;border:1px solid var(--gs-line)!important;box-shadow:0 3px 12px rgba(23,32,51,.055)!important;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease!important}
+.gs-dashboard-card:hover,.tile:hover,.teacher-tile:hover{transform:translateY(-2px)!important;border-color:#9bcdb7!important;box-shadow:0 8px 20px rgba(23,32,51,.10)!important}
+.gs-icon,.tile .icon,.teacher-tile .icon{font-size:25px!important;line-height:1.1}
+.gs-title,.tile b,.teacher-tile b{font-size:16px!important;margin-top:7px!important}
+.gs-desc,.tile small,.teacher-tile small{font-size:12.5px!important;line-height:1.35!important;color:var(--gs-muted)!important}
+.gs-open,.teacher-tile .open,.tile span:last-child{font-size:12px!important;font-weight:800!important;color:var(--gs-green)!important;margin-top:8px!important}
+.gs-detail-panel,.detail,#studentDetail,#childDetail,#panel{scroll-margin-top:78px}
+.gs-detail-panel:not(.gs-collapsed),#studentDetail:not(.gs-collapsed),#childDetail:not(.gs-collapsed),#panel{margin-top:10px!important}
+.detail,.gs-detail-panel{border-top:3px solid var(--gs-green)!important}
+.gs-back,.back{display:inline-flex!important;align-items:center;gap:6px!important;background:#eaf5f0!important;color:var(--gs-green-dark)!important;border:1px solid #cfe5da!important;margin-bottom:14px!important;padding:9px 13px!important;border-radius:10px!important;font-weight:800!important}
+.section-head,.section-title{margin-bottom:4px}
+.actions{gap:8px!important}
+.actions button,button{border-radius:10px}
+@media(max-width:650px){main{margin-top:10px!important;padding-left:10px!important;padding-right:10px!important}.gs-dashboard-nav,.tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}.gs-dashboard-card,.tile,.teacher-tile{min-height:105px!important;padding:13px!important}.gs-title,.tile b,.teacher-tile b{font-size:14px!important}.gs-desc,.tile small,.teacher-tile small{font-size:11.5px!important}.gs-open,.teacher-tile .open,.tile span:last-child{font-size:11px!important}header{position:sticky!important}}
+@media(max-width:390px){.gs-dashboard-nav,.tiles{grid-template-columns:1fr!important}}
+
+/* Final blue visual language */
+:root{--gs-green:#0b63ce;--gs-green-dark:#0b4ea2;--gs-blue:#0b63ce;--gs-soft:#eef5ff}
+header{background:linear-gradient(135deg,#0b63ce,#155eef)!important}
+.gs-open,.tile span:last-child{color:#0b63ce!important}
+.gs-back,.back{background:#eef5ff!important;color:#0b4ea2!important;border-color:#c7dbf7!important}

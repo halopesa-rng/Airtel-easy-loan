@@ -1,0 +1,16 @@
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f6fa;color:#172033}
+header{background:#0b63ce;color:#fff;padding:18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+main{max-width:1200px;margin:25px auto;padding:0 15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}
+.card{background:#fff;padding:20px;border-radius:14px;box-shadow:0 3px 14px #0001;margin-bottom:18px}
+.stat{font-size:30px;font-weight:bold;margin-top:8px}
+button{background:#0b63ce;color:#fff;border:0;padding:11px 16px;border-radius:8px;cursor:pointer}
+input,select{width:100%;padding:11px;margin:6px 0 12px;border:1px solid #ccd4df;border-radius:8px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}
+.login{max-width:420px;margin:8vh auto}
+.logo{text-align:center;color:#0b63ce;font-size:26px;font-weight:bold}
+.err{color:#b00020;margin-top:10px}.login-card{max-width:520px;margin:auto}.logo-area{text-align:center}.logo-circle{width:74px;height:74px;border-radius:50%;background:#0b63ce;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:25px;margin:0 auto 10px}.logo-area h1{color:#0b63ce;margin:4px 0}.role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.role-card{background:#fff;color:#172033;border:1px solid #dbe4ea;box-shadow:0 2px 9px #0001;text-align:left;display:flex;flex-direction:column;gap:3px}.role-card span{font-size:25px}.role-card small{color:#667085}.role-card:hover{border-color:#0b63ce;transform:translateY(-1px)}.selected{padding:12px;background:#eef6fa;border-radius:9px;margin:12px 0;color:#0b4ea2}.change{background:#0b63ce;margin-bottom:6px}.login-btn{width:100%;font-size:16px}footer{text-align:center;margin-top:22px;color:#667085;font-size:12px}@media(max-width:480px){.role-grid{grid-template-columns:1fr}.login{margin:3vh auto}}
+
+.status-banner{padding:14px;border-radius:12px;margin:12px 0}.status-banner.success{background:#ecfdf3;border:1px solid #abefc6;color:#067647}.status-banner.danger{background:#fef3f2;border:1px solid #fecdca;color:#b42318}.tile{transition:transform .18s ease,box-shadow .18s ease}.tile:hover{transform:translateY(-3px);box-shadow:0 8px 24px #0b63ce18}.gs-back{margin-bottom:16px}

@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: olive-tech-school-platform
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/platform/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: olive-tech-platform-db
+          property: connectionString
+      - key: CONTROL_DATABASE_URL
+        fromDatabase:
+          name: olive-tech-platform-db
+          property: connectionString
+      - key: TENANT_DATABASE_ADMIN_URL
+        fromDatabase:
+          name: olive-tech-platform-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PLATFORM_ADMIN_KEY
+        generateValue: true
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: SUPER_ADMIN_TELEGRAM_ID
+        sync: false
+      - key: OLIVE_TECH_PHONE
+        sync: false
+      - key: OLIVE_TECH_EMAIL
+        sync: false
+      - key: OLIVE_TECH_WEBSITE
+        sync: false
+      - key: OLIVE_TECH_MPESA_PAYBILL
+        sync: false
+
+databases:
+  - name: olive-tech-platform-db
+    databaseName: olive_control
+    user: olive_admin
+    plan: basic-256mb
